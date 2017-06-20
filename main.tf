@@ -3,6 +3,50 @@ resource "azurerm_resource_group" "test" {
   location = "West US"
 }
 
+resource "azurerm_virtual_network" "test" {
+  name                = "acctvn"
+  address_space       = ["10.0.0.0/16"]
+  location            = "West US"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "acctsub"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  virtual_network_name = "${azurerm_virtual_network.test.name}"
+  address_prefix       = "10.0.2.0/24"
+}
+
+resource "azurerm_network_interface" "test" {
+  name                = "acctni"
+  location            = "West US"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+
+  ip_configuration {
+    name                          = "testconfiguration1"
+    subnet_id                     = "${azurerm_subnet.test.id}"
+    private_ip_address_allocation = "dynamic"
+  }
+}
+
+resource "azurerm_storage_account" "test" {
+  name                = "accsa"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+  location            = "westus"
+  account_type        = "Standard_LRS"
+
+  tags {
+    environment = "staging"
+  }
+}
+
+resource "azurerm_storage_container" "test" {
+  name                  = "vhds"
+  resource_group_name   = "${azurerm_resource_group.test.name}"
+  storage_account_name  = "${azurerm_storage_account.test.name}"
+  container_access_type = "private"
+}
+
 resource "azurerm_virtual_machine" "test" {
   name                  = "acctvm"
   location              = "West US"
